@@ -1,0 +1,9 @@
+/docs/
+/lib/
+/bin/
+/.shards/
+*.dwarf
+*.o
+*.elf
+*.nso
+*.nro

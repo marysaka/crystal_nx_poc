@@ -1,0 +1,1 @@
+require "./crt0/dummy"
