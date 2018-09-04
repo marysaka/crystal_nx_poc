@@ -37,5 +37,5 @@ clean_bss:
 // After that we need to relocate
 startup:
     adrp x0, _start
-    bl svcExitProcess
+    bl main
     svc 0xFF // Exit

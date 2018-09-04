@@ -1,11 +1,5 @@
 require "./crt0/dummy"
+require "./svc/svc"
 
-module SVC
-    def self.exit_process
-        asm("svc 0x7" :::: "volatile");
-    end
-end
-
-fun svcExitProcess
-    SVC.exit_process();
-end
+SVC.output_debug_string "Hello World"
+SVC.exit_process
