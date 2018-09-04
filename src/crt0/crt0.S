@@ -1,25 +1,22 @@
-.section .text.crt0, "ax"
-NORELOC__filestart:
 .global _start
+.global _mod_header
+.global rela_test
+.global rela_test_size
 
+.extern __crystal_nx_init
+.extern svcExitProcess
+.extern svcReturnFromException
+
+.section .text.crt0, "ax"
 _start:
     b tranpoline
     .word _mod_header - _start
 
-.section .data.mod0
-.global _mod_header
-
-_mod_header:
-    .ascii "MOD0"
-    .word __dynamic_start - _mod_header
-    .word __bss_start - _mod_header
-    .word __bss_end - _mod_header
-    .word 0, 0 // eh_frame_hdr start/end
-    .word 0 // runtime-generated module object offset
-
 .section .text, "x"
-.extern svcExitProcess
 tranpoline:
+
+    // restore LR
+    mov x30, x27
 
     // First clean the .bss
     adrp x5, __bss_start
@@ -34,8 +31,30 @@ clean_bss:
     add x5, x5, 0x8
     b clean_bss
 
-// After that we need to relocate
 startup:
-    adrp x0, _start
-    bl main
-    svc 0xFF // Exit
+    // init + relocation
+    adrp x2, _start
+    add x2, x2, #:lo12:_start
+    adrp x3, __dynamic_start
+    add x3, x3, #:lo12:__dynamic_start
+    bl __crystal_nx_init
+    cmp x0, 0
+    b.ne svcReturnFromException
+
+    adrp x30, svcExitProcess
+    add x30, x30, #:lo12:svcExitProcess
+    b main
+
+.section .data.mod0
+rela_test:
+    .ascii "Hello from RELA"
+rela_test_size:
+    .word 15
+
+_mod_header:
+    .ascii "MOD0"
+    .word __dynamic_start - _mod_header
+    .word __bss_start - _mod_header
+    .word __bss_end - _mod_header
+    .word 0, 0 // eh_frame_hdr start/end
+    .word 0 // runtime-generated module object offset
