@@ -18,7 +18,24 @@ _mod_header:
     .word 0 // runtime-generated module object offset
 
 .section .text, "x"
-.global tranpoline
+.extern svcExitProcess
 tranpoline:
-    mov w0, #0xDEAD
-    svc 0x7 // Exit
+
+    // First clean the .bss
+    adrp x5, __bss_start
+    add x5, x5, #:lo12:__bss_start
+    adrp x6, __bss_end
+    add x6, x6, #:lo12:__bss_end
+
+clean_bss:
+    cmp x5, x6
+    b.eq startup
+    str xzr, [x5]
+    add x5, x5, 0x8
+    b clean_bss
+
+// After that we need to relocate
+startup:
+    adrp x0, _start
+    bl svcExitProcess
+    svc 0xFF // Exit

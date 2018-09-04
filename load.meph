@@ -1,0 +1,2 @@
+(load-nso "testing.nso" 0x7100000000)
+(run-from 0x7100000000)

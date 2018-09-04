@@ -30,15 +30,15 @@ AR := $(LLVM_BINDIR)/llvm-ar
 RANLIB := $(LLVM_BINDIR)/llvm-ranlib
 LINK_SCRIPT = link.T
 
-LD_FLAGS :=	--shared \
+LD_FLAGS := --verbose \
 	--gc-sections \
 	--eh-frame-hdr \
 	-T link.T
 
-CC_FLAGS := -g -fPIC -fexceptions -fuse-ld=lld -fstack-protector-strong -mtune=cortex-a53 -target aarch64-none-linux-gnu -nostdlib -nostdlibinc $(SYS_INCLUDES) -D__SWITCH__=1 -Wno-unused-command-line-argument
+CC_FLAGS := -v -g -fPIC -fexceptions -fuse-ld=lld -fstack-protector-strong -mtune=cortex-a53 -target aarch64-none-linux-gnu -nostdlib -nostdlibinc $(SYS_INCLUDES) -D__SWITCH__=1 -Wno-unused-command-line-argument
 CXX_FLAGS := $(CPP_INCLUDES) $(CC_FLAGS) -std=c++17 -stdlib=libc++ -nodefaultlibs -nostdinc++
 AR_FLAGS := rcs
-AS_FLAGS := -arch=aarch64 -triple aarch64-none-linux-gnu
+AS_FLAGS := -g -fPIC -arch=aarch64 -triple aarch64-none-linux-gnu
 
 # for compatiblity
 CFLAGS := $(CC_FLAGS)
@@ -58,7 +58,7 @@ $(NAME).elf: $(OBJECTS)
 	$(LD) $(LD_FLAGS) -o $@ $+
 
 src/crt0/crt0.o: src/crt0/crt0.S
-	$(CC) $(CC_FLAGS) -o $@ $< $(LINK_SCRIPT)
+	$(CC) $(CC_FLAGS) -c -o $@ $< $(LINK_SCRIPT)
 
 %.nso: %.elf
 	linkle nso $< $@

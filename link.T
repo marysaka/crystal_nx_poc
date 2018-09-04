@@ -33,9 +33,6 @@ SECTIONS
   . = ALIGN(0x1000);
 
   .rodata : { *(.rodata .rodata.*) } :rodata
-  .mod0 : {
-    KEEP(crt0.o(.data.mod0))
-  }
   .hash : { *(.hash) }
   .dynsym : { *(.dynsym .dynsym.*) }
   .dynstr : { *(.dynstr .dynstr.*) }
@@ -58,6 +55,10 @@ SECTIONS
   /* Read-write sections */
 
    . = ALIGN(0x1000);
+
+  .mod0 : {
+    KEEP(crt0.o(.data.mod0))
+  } :data
 
   .data : {
     *(.data .data.*)
