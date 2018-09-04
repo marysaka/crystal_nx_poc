@@ -40,10 +40,10 @@ LD_FLAGS := --verbose \
 	-Bstatic \
 	-Bdynamic
 
-CC_FLAGS := -v -g -fPIC -fexceptions -fuse-ld=lld -fstack-protector-strong -mtune=cortex-a53 -target aarch64-none-linux-gnu -nostdlib -nostdlibinc $(SYS_INCLUDES) -D__SWITCH__=1 -Wno-unused-command-line-argument
+CC_FLAGS := -v -g -fPIC -fexceptions -fuse-ld=lld -fstack-protector-strong -mtune=cortex-a53 -target aarch64-none-switch -nostdlib -nostdlibinc $(SYS_INCLUDES) -D__SWITCH__=1 -Wno-unused-command-line-argument
 CXX_FLAGS := $(CPP_INCLUDES) $(CC_FLAGS) -std=c++17 -stdlib=libc++ -nodefaultlibs -nostdinc++
 AR_FLAGS := rcs
-AS_FLAGS := -g -fPIC -arch=aarch64 -triple aarch64-none-linux-gnu
+AS_FLAGS := -g -fPIC -arch=aarch64 -triple aarch64-none-switch
 
 # for compatiblity
 CFLAGS := $(CC_FLAGS)
@@ -55,7 +55,7 @@ OBJECTS = main.o src/crt0/crt0.o
 all: $(NAME).nso $(NAME).nro
 
 main.o: $(CR_SRCS)
-	crystal build src/main.cr --cross-compile --prelude=./crt0/prelude --target="aarch64-unknown-linux-gnu" --emit llvm-ir
+	crystal build src/main.cr --cross-compile --prelude=./crt0/prelude --target="aarch64-none-switch" --emit llvm-ir
 
 $(NAME).elf: $(OBJECTS)
 	mkdir -p $(@D)
