@@ -31,9 +31,14 @@ RANLIB := $(LLVM_BINDIR)/llvm-ranlib
 LINK_SCRIPT = link.T
 
 LD_FLAGS := --verbose \
+	-Bsymbolic \
+	--shared \
 	--gc-sections \
 	--eh-frame-hdr \
-	-T link.T
+	--no-undefined \
+	-T link.T \
+	-Bstatic \
+	-Bdynamic
 
 CC_FLAGS := -v -g -fPIC -fexceptions -fuse-ld=lld -fstack-protector-strong -mtune=cortex-a53 -target aarch64-none-linux-gnu -nostdlib -nostdlibinc $(SYS_INCLUDES) -D__SWITCH__=1 -Wno-unused-command-line-argument
 CXX_FLAGS := $(CPP_INCLUDES) $(CC_FLAGS) -std=c++17 -stdlib=libc++ -nodefaultlibs -nostdinc++
@@ -45,12 +50,12 @@ CFLAGS := $(CC_FLAGS)
 CXXFLAGS := $(CXX_FLAGS)
 
 CR_SRCS = src/*.cr src/**/*.cr
-OBJECTS = src/crt0/crt0.o main.o
+OBJECTS = main.o src/crt0/crt0.o
 
 all: $(NAME).nso $(NAME).nro
 
 main.o: $(CR_SRCS)
-	crystal build src/main.cr --cross-compile --prelude=empty --target="aarch64-unknown-linux-gnu" --emit llvm-ir
+	crystal build src/main.cr --cross-compile --prelude=./crt0/prelude --target="aarch64-unknown-linux-gnu" --emit llvm-ir
 
 $(NAME).elf: $(OBJECTS)
 	mkdir -p $(@D)

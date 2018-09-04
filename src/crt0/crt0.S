@@ -1,4 +1,4 @@
-.section .crt0, "ax"
+.section .text.crt0, "ax"
 NORELOC__filestart:
 .global _start
 

@@ -15,13 +15,10 @@ SECTIONS
 {
   . = 0;
 
-  .crt0 : {
-    KEEP(*(.crt0))
-  } :text
-
-  . = 0x80;
   .text : {
     HIDDEN(__text_start = .);
+    KEEP(*(.text.crt0))
+    . = 0x80;
 
     *(.text .text.*)
     *(.plt .plt.*)
