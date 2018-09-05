@@ -1,60 +1,25 @@
 require "primitives"
-
-class Object
-    def ===(other)
-        self == other
-    end
-end
-
-class String
-    def bytesize
-        @bytesize
-    end
-    def to_unsafe : UInt8*
-        pointerof(@c)
-    end
-end
+require "./types"
 
 # TODO: remove this
 fun svcFakePrintNumber(error_code : UInt64)
     asm("svc 0x79" : : "x0"(error_code));
 end
 
-lib Elf
-    
-    union ValueOrPointer
-        value: UInt64
-        pointer: Void*
-    end
-
-    struct Dyn
-        tag: Int64
-        un: ValueOrPointer # useless but well
-    end
-
-    struct Rel
-        offset: UInt64
-        reloc_type, symbol: UInt32    
-    end
-
-    struct RelA
-        offset: UInt64
-        reloc_type, symbol: UInt32
-        addend: UInt64
-    end
-end
-
-alias Handle = UInt32;
-alias Result = UInt32;
-
-
 lib LibCrystalMain
   @[Raises]
   fun __crystal_main(argc : Int32, argv : UInt8**)
 end
 
+def clean_bss(start_bss, end_bss)
+    until start_bss.address == end_bss.address
+        start_bss.value = 0;
+        start_bss += 1;
+    end
+end
+
 # TODO: support all sort of relocation
-fun relocate(base: UInt64, dynamic_section: Elf::Dyn*): UInt64
+def relocate(base, dynamic_section) : UInt64
     relaOffset = 0_u64
     relaSize = 0_u64
     relaEnt = 0_u64
@@ -79,7 +44,6 @@ fun relocate(base: UInt64, dynamic_section: Elf::Dyn*): UInt64
         0_u64
     end
     rela = Pointer(Elf::RelA).new(base + relaOffset)
-    svcFakePrintNumber(base + relaOffset)
 
     
     i = 0_i64
@@ -100,15 +64,21 @@ fun relocate(base: UInt64, dynamic_section: Elf::Dyn*): UInt64
     0_u64
 end
 
-fun __crystal_nx_init(loader_config: Void*, main_thread_handle: Handle, base: UInt64, dynamic_section: Elf::Dyn*) : UInt64
+def nx_init(loader_config, main_thread_handle, base, dynamic_section) : UInt64
     res = relocate(base, dynamic_section)
     if res != 0
         return res
     end
+    # TODO: memory allocation, kernel version detection, HBABI and argument parsing
     0_u64
 end
 
-fun main(argc : Int32, argv : UInt8**) : Int32
-  LibCrystalMain.__crystal_main(argc, argv)
-  0
+fun __crystal_nx_entrypoint(loader_config: Void*, main_thread_handle: Handle, base: UInt64, dynamic_section: Elf::Dyn*, bss_start: UInt64*, bss_end: UInt64*): UInt64
+    clean_bss(bss_start, bss_end)
+    res = nx_init(loader_config, main_thread_handle, base, dynamic_section)
+    if res != 0
+        return res
+    end
+    LibCrystalMain.__crystal_main(0, nil)
+    0_u64
 end

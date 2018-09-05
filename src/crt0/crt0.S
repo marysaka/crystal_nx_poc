@@ -3,7 +3,7 @@
 .global rela_test
 .global rela_test_size
 
-.extern __crystal_nx_init
+.extern __crystal_nx_entrypoint
 .extern svcExitProcess
 .extern svcReturnFromException
 
@@ -14,36 +14,20 @@ _start:
 
 .section .text, "x"
 tranpoline:
-
-    // restore LR
-    mov x30, x27
-
-    // First clean the .bss
-    adrp x5, __bss_start
-    add x5, x5, #:lo12:__bss_start
-    adrp x6, __bss_end
-    add x6, x6, #:lo12:__bss_end
-
-clean_bss:
-    cmp x5, x6
-    b.eq startup
-    str xzr, [x5]
-    add x5, x5, 0x8
-    b clean_bss
-
-startup:
-    // init + relocation
+    // prepare args
     adrp x2, _start
     add x2, x2, #:lo12:_start
     adrp x3, __dynamic_start
     add x3, x3, #:lo12:__dynamic_start
-    bl __crystal_nx_init
-    cmp x0, 0
-    b.ne svcReturnFromException
+    adrp x4, __bss_start
+    add x4, x4, #:lo12:__bss_start
+    adrp x5, __bss_end
+    add x5, x5, #:lo12:__bss_end
 
+    // because I cannot use NoReturn directly in crystal code, let's cheat a bit and make it return to the exit directly
     adrp x30, svcExitProcess
     add x30, x30, #:lo12:svcExitProcess
-    b main
+    b __crystal_nx_entrypoint
 
 .section .data.mod0
 rela_test:
@@ -56,5 +40,6 @@ _mod_header:
     .word __dynamic_start - _mod_header
     .word __bss_start - _mod_header
     .word __bss_end - _mod_header
-    .word 0, 0 // eh_frame_hdr start/end
+    .word __eh_frame_start - _mod_header
+    .word __eh_frame_end - _mod_header
     .word 0 // runtime-generated module object offset

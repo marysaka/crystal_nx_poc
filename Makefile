@@ -55,7 +55,7 @@ OBJECTS = main.o src/crt0/crt0.o
 all: $(NAME).nso $(NAME).nro
 
 main.o: $(CR_SRCS)
-	crystal build src/main.cr --cross-compile --prelude=./crt0/prelude --target="aarch64-none-switch" --emit llvm-ir
+	crystal build src/main.cr --cross-compile --prelude=./nx_prelude --target="aarch64-none-switch" --emit llvm-ir
 
 $(NAME).elf: $(OBJECTS)
 	mkdir -p $(@D)
