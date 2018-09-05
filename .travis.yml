@@ -20,6 +20,7 @@ addons:
 install:
   - export LLVM_POSTFIX=-6.0
   - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
+  - source $HOME/.cargo/env
   - cargo install --features=binaries --git https://github.com/MegatonHammer/linkle --force --root .
 
 script:
