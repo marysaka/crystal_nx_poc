@@ -1,10 +1,6 @@
 require "primitives"
+require "./svc/svc"
 require "./types"
-
-# TODO: remove this
-fun svcFakePrintNumber(error_code : UInt64)
-  asm("svc 0x79" :: "x0"(error_code))
-end
 
 lib LibCrystalMain
   @[Raises]
@@ -42,20 +38,21 @@ def relocate(base, dynamic_section) : UInt64
     return 0xBEEF_u64
   end
 
-  rela = Pointer(Elf::RelA).new(base + rela_offset)
+  rela_base = Pointer(Elf::RelA).new(base + rela_offset)
 
   i = 0_i64
-  while (i != rela_count)
-    rela += i
-    case rela.value.reloc_type
+  rela_count.times do |i|
+    rela = rela_base[i]
+
+    case rela.reloc_type
     when 0x403_u32 # R_AARCH64_RELATIVE
       # TODO: supports symbol
-      if rela.value.symbol != 0
+      if rela.symbol != 0
         return 0x4243_u64
       end
-      Pointer(UInt64).new(base + rela.value.offset).value = base + rela.value.addend
+      Pointer(UInt64).new(base + rela.offset).value = base + rela.addend
     else
-      svcFakePrintNumber(rela.value.reloc_type.to_u64)
+      SVC.output_debug_string(rela.reloc_type.to_u64, 16)
       return 0x4242_u64
     end
     i += 1

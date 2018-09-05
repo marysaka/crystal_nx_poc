@@ -1,8 +1,5 @@
-class Object
-  def ===(other)
-    self == other
-  end
-end
+require "primitives"
+require "./external_types"
 
 class String
   def bytesize

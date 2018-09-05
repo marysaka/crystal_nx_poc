@@ -25,4 +25,10 @@ module SVC
   def self.output_debug_string(string : String)
     svcOutputDebugString(string.to_unsafe, string.bytesize.to_u64)
   end
+
+  def self.output_debug_string(value : Int, base)
+    value.internal_to_s(base, false) do |ptr, count|
+      svcOutputDebugString(ptr, count.to_u64)
+    end
+  end
 end
