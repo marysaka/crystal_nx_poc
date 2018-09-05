@@ -33,11 +33,12 @@ def relocate(base, dynamic_section) : UInt64
     when 0x9_u64 # DT_RELAENT
       rela_ent = dynamic_section.value.un.value
     when 0x6ffffff9_u64 # DT_RELACOUNT
-      relaCount = dynamic_section.value.un.value
+      rela_count = dynamic_section.value.un.value
     end
     dynamic_section += 1
   end
 
+  svcFakePrintNumber(rela_count.to_u64)
   if rela_ent != 0x18 || rela_size != rela_ent * rela_count
     return 0xBEEF_u64
   end
