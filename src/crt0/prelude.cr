@@ -15,6 +15,7 @@ class String
     end
 end
 
+# TODO: remove this
 fun svcFakePrintNumber(error_code : UInt64)
     asm("svc 0x79" : : "x0"(error_code));
 end
@@ -52,6 +53,7 @@ lib LibCrystalMain
   fun __crystal_main(argc : Int32, argv : UInt8**)
 end
 
+# TODO: support all sort of relocation
 fun relocate(base: UInt64, dynamic_section: Elf::Dyn*): UInt64
     relaOffset = 0_u64
     relaSize = 0_u64
@@ -84,9 +86,9 @@ fun relocate(base: UInt64, dynamic_section: Elf::Dyn*): UInt64
     while (i != relaCount)
         rela += i
         case rela.value.reloc_type
-        when 0x403_u32
+        when 0x403_u32 # R_AARCH64_RELATIVE
             if rela.value.symbol != 0
-                return 0x4243_u64;
+                return 0x4243_u64; # TODO: supports symbol
             end
             Pointer(UInt64).new(base + rela.value.offset).value = base + rela.value.addend
         else
