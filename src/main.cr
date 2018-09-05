@@ -7,3 +7,4 @@ end
 
 svcOutputDebugString(pointerof(Crt0.rela_test), Crt0.rela_test_size.to_u64)
 SVC.output_debug_string "Hello World"
+SVC.output_debug_string get_tls().address, 16

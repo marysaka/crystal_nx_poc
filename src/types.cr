@@ -1,5 +1,5 @@
 require "primitives"
-require "./external_types"
+require "./internal/external_types"
 
 class String
   def bytesize
