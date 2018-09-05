@@ -24,12 +24,6 @@ struct Pointer(T)
   end
 end
 
-struct Nil
-  def abs
-    self
-  end
-end
-
 struct Int8
   MIN = -128_i8
   MAX =  127_i8

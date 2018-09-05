@@ -1,9 +1,9 @@
 # For crt0
-fun svcExitProcess
+fun svcExitProcess : NoReturn
   SVC.exit_process
 end
 
-fun svcReturnFromException(error_code : UInt64)
+fun svcReturnFromException(error_code : UInt64) : NoReturn
   SVC.return_from_exception(error_code)
 end
 
@@ -14,12 +14,16 @@ fun svcOutputDebugString(string : UInt8*, string_size : UInt64) : UInt32
 end
 
 module SVC
-  def self.exit_process
+  def self.exit_process : NoReturn
     asm("svc 0x7" :::: "volatile")
+    while true
+    end
   end
 
-  def self.return_from_exception(error_code : UInt64)
+  def self.return_from_exception(error_code : UInt64) : NoReturn
     asm("svc 0x28" :: "x0"(error_code))
+    while true
+    end
   end
 
   def self.output_debug_string(string : String)
