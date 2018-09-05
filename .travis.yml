@@ -1,0 +1,46 @@
+language: generic
+rust: stable
+
+dist: trusty
+sudo: false
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-6.0
+      - sourceline: 'deb https://dist.crystal-lang.org/apt crystal main'
+        key_url: 'https://keybase.io/crystal/pgp_keys.asc'
+    packages:
+      - crystal
+      - clang-6.0
+      - llvm-6.0
+      - llvm-6.0-dev
+      - lld-6.0
+
+install:
+  - export LLVM_POSTFIX=-6.0
+  - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $TRAVIS_RUST_VERSION
+  - cargo install --features=binaries --git https://github.com/MegatonHammer/linkle --force --root .
+
+script:
+  - make NAME=crystal_nx_poc_$TRAVIS_TAG
+
+
+after_success:
+  - mv main.ll crystal_nx_poc_$TRAVIS_TAG.ll
+
+deploy:
+  - provider: releases
+    api_key: $GITHUB_TOKEN
+    file:
+      - "crystal_nx_poc_$TRAVIS_TAG.nro"
+      - "crystal_nx_poc_$TRAVIS_TAG.nso"
+      - "crystal_nx_poc_$TRAVIS_TAG.elf"
+      - "crystal_nx_poc_$TRAVIS_TAG.ll"
+    skip-cleanup: true
+    draft: true
+    tag_name: $TRAVIS_TAG
+    on:
+      tags: true
+condition: $TRAVIS_OS_NAME = linux
