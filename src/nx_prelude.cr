@@ -38,7 +38,6 @@ def relocate(base, dynamic_section) : UInt64
     dynamic_section += 1
   end
 
-  svcFakePrintNumber(rela_count.to_u64)
   if rela_ent != 0x18 || rela_size != rela_ent * rela_count
     return 0xBEEF_u64
   end
