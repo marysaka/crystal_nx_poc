@@ -1,2 +1,2 @@
-(load-nso "crystal_nx_poc.nso" 0x7100000000)
+(load-nso "build/crystal_nx_poc.nso" 0x7100000000)
 (run-from 0x7100000000)

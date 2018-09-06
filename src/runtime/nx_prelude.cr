@@ -1,6 +1,7 @@
 require "primitives"
 require "../svc/svc"
 require "../types"
+require "../internal/utils"
 require "./tls"
 
 lib LibCrystalMain

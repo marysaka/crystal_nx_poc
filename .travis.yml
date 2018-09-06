@@ -16,6 +16,7 @@ addons:
       - llvm-6.0
       - llvm-6.0-dev
       - lld-6.0
+      - cmake
 
 install:
   - export LLVM_POSTFIX=-6.0
@@ -34,9 +35,9 @@ deploy:
   - provider: releases
     api_key: $GITHUB_TOKEN
     file:
-      - "crystal_nx_poc_$TRAVIS_TAG.nro"
-      - "crystal_nx_poc_$TRAVIS_TAG.nso"
-      - "crystal_nx_poc_$TRAVIS_TAG.elf"
+      - "build/crystal_nx_poc_$TRAVIS_TAG.nro"
+      - "build/crystal_nx_poc_$TRAVIS_TAG.nso"
+      - "build/crystal_nx_poc_$TRAVIS_TAG.elf"
       - "crystal_nx_poc_$TRAVIS_TAG.ll"
     skip-cleanup: true
     draft: true

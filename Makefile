@@ -1,3 +1,6 @@
+.SUFFIXES: # disable built-in rules
+.SECONDARY: # don't delete intermediate files
+
 # inspired by libtransistor-base makefile
 
 # start llvm programs
@@ -28,11 +31,17 @@ AR := $(LLVM_BINDIR)/llvm-ar
 RANLIB := $(LLVM_BINDIR)/llvm-ranlib
 # end llvm programs
 
+SOURCE_ROOT = .
+SRC_DIR = $(SOURCE_ROOT)/src
+BUILD_DIR := $(SOURCE_ROOT)/build
+LIB_DIR = $(BUILD_DIR)/lib/
 TARGET_TRIPLET = aarch64-none-switch
 LINK_SCRIPT = link.T
 
-CC_FLAGS := -g -fPIC -fexceptions -fuse-ld=lld -fstack-protector-strong -mtune=cortex-a53 -target $(TARGET_TRIPLET) -nostdlib -nostdlibinc -Wno-unused-command-line-argument
-CXX_FLAGS := $(CPP_INCLUDES) $(CC_FLAGS) -std=c++17 -stdlib=libc++ -nodefaultlibs -nostdinc++
+# For compiler-rt, we need some system header
+SYS_INCLUDES := -isystem $(realpath $(SOURCE_ROOT))/include/
+CC_FLAGS := -g -fPIC -fexceptions -fuse-ld=lld -fstack-protector-strong -mtune=cortex-a53 -nostdlib -nostdlibinc $(SYS_INCLUDES) -Wno-unused-command-line-argument -D__SWITCH__=1
+CXX_FLAGS := $(CC_FLAGS) -std=c++17 -stdlib=libc++ -nodefaultlibs -nostdinc++
 AR_FLAGS := rcs
 AS_FLAGS := -g -fPIC -arch=aarch64 -triple $(TARGET_TRIPLET)
 
@@ -57,20 +66,41 @@ SOURCES = src/*.cr src/**/*.cr
 # see https://github.com/MegatonHammer/linkle
 LINKLE = linkle
 
+# export
+export LD
+export CC
+export CXX
+export AS
+export AR
+export LD_FOR_TARGET = $(LD)
+export CC_FOR_TARGET = $(CC)
+export AS_FOR_TARGET = $(AS) -arch=aarch64 -mattr=+neon
+export AR_FOR_TARGET = $(AR)
+export RANLIB_FOR_TARGET = $(RANLIB)
+export CFLAGS_FOR_TARGET = $(CC_FLAGS) -Wno-unused-command-line-argument -Wno-error-implicit-function-declaration
+
 NAME = crystal_nx_poc
+all: $(BUILD_DIR)/$(NAME).nso $(BUILD_DIR)/$(NAME).nro
 
-OBJECTS = $(NAME).o src/runtime/crt0.o
+# start compiler-rt definitions
+LIB_COMPILER_RT_BUILTINS := $(BUILD_DIR)/compiler-rt/lib/libclang_rt.builtins-aarch64.a
+include mk/compiler-rt.mk
+# end compiler-rt definitions
 
-all: $(NAME).nso $(NAME).nro
+OBJECTS = $(LIB_COMPILER_RT_BUILTINS) $(BUILD_DIR)/$(NAME).o $(BUILD_DIR)/runtime/crt0.o
 
-$(NAME).o: $(SOURCES)
-	$(CRYSTAL) build src/main.cr -o $(NAME) $(CRFLAGS)
+$(BUILD_DIR)/$(NAME).o: $(SOURCES)
+	mkdir -p $(@D)
+	rm -f $@
+	$(CRYSTAL) build src/main.cr -o $(BUILD_DIR)/$(NAME) $(CRFLAGS)
 
-$(NAME).elf: $(OBJECTS)
+$(BUILD_DIR)/$(NAME).elf: $(OBJECTS)
 	$(LD) $(LD_FLAGS) -o $@ $+
 
-%.o: %.S
-	$(CC) $(CC_FLAGS) -c -o $@ $< $(LINK_SCRIPT)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
+	mkdir -p $(@D)
+	rm -f $@
+	$(CC) $(CC_FLAGS) -target $(TARGET_TRIPLET) -c -o $@ $< $(LINK_SCRIPT)
 
 %.nso: %.elf
 	$(LINKLE) nso $< $@
@@ -78,7 +108,6 @@ $(NAME).elf: $(OBJECTS)
 %.nro: %.elf
 	$(LINKLE) nro $< $@
 
-clean:
-	rm -rf $(OBJECTS) main.ll $(NAME).elf $(NAME).nso $(NAME).nro
+clean: clean_compiler-rt
+	rm -rf $(OBJECTS) main.ll $(BUILD_DIR)/$(NAME).elf $(BUILD_DIR)/$(NAME).nso $(BUILD_DIR)/$(NAME).nro
 
-re: clean all
