@@ -87,7 +87,7 @@ LIB_COMPILER_RT_BUILTINS := $(BUILD_DIR)/compiler-rt/lib/libclang_rt.builtins-aa
 include mk/compiler-rt.mk
 # end compiler-rt definitions
 
-OBJECTS = $(LIB_COMPILER_RT_BUILTINS) $(BUILD_DIR)/$(NAME).o $(BUILD_DIR)/runtime/crt0.o
+OBJECTS = $(LIB_COMPILER_RT_BUILTINS) $(BUILD_DIR)/$(NAME).o $(BUILD_DIR)/runtime/crt0.o $(BUILD_DIR)/kernel/svc_ex.o
 
 $(BUILD_DIR)/$(NAME).o: $(SOURCES)
 	mkdir -p $(@D)

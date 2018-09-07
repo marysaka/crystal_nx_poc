@@ -1,5 +1,8 @@
 require "primitives"
-require "../svc/svc"
+require "intrinsics"
+
+require "../kernel/svc"
+require "../kernel/ipc"
 require "../types"
 require "../internal/utils"
 require "./tls"
@@ -54,7 +57,6 @@ def relocate(base, dynamic_section) : UInt64
       end
       Pointer(UInt64).new(base + rela.offset).value = base + rela.addend
     else
-      SVC.output_debug_string(rela.reloc_type.to_u64, 16)
       return 0x4242_u64
     end
     i += 1

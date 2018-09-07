@@ -27,21 +27,37 @@ end
 struct Int8
   MIN = -128_i8
   MAX =  127_i8
+
+  def self.new(value)
+    value.to_i8
+  end
 end
 
 struct Int16
   MIN = -32768_i16
   MAX =  32767_i16
+
+  def self.new(value)
+    value.to_i16
+  end
 end
 
 struct Int32
   MIN = -2147483648_i32
   MAX =  2147483647_i32
+
+  def self.new(value)
+    value.to_i32
+  end
 end
 
 struct Int64
   MIN = -9223372036854775808_i64
   MAX =  9223372036854775807_i64
+
+  def self.new(value)
+    value.to_i64
+  end
 end
 
 struct UInt8
@@ -50,6 +66,10 @@ struct UInt8
 
   def abs
     self
+  end
+
+  def self.new(value)
+    value.to_u8
   end
 end
 
@@ -60,6 +80,10 @@ struct UInt16
   def abs
     self
   end
+
+  def self.new(value)
+    value.to_u16
+  end
 end
 
 struct UInt32
@@ -69,6 +93,10 @@ struct UInt32
   def abs
     self
   end
+
+  def self.new(value)
+    value.to_u32
+  end
 end
 
 struct UInt64
@@ -77,6 +105,10 @@ struct UInt64
 
   def abs
     self
+  end
+
+  def self.new(value)
+    value.to_u64
   end
 end
 
@@ -93,8 +125,32 @@ struct Int
     end
   end
 
+  def self.zero : self
+    new(0)
+  end
+
   def abs
     self >= 0 ? self : 0 - self
+  end
+
+  def >>(count : Int)
+    if count < 0
+      self << count.abs
+    elsif count < sizeof(self) * 8
+      self.unsafe_shr(count)
+    else
+      self.class.zero
+    end
+  end
+
+  def <<(count : Int)
+    if count < 0
+      self >> count.abs
+    elsif count < sizeof(self) * 8
+      self.unsafe_shl(count)
+    else
+      self.class.zero
+    end
   end
 
   def remainder(other : Int)
@@ -124,6 +180,15 @@ struct Int
     unsafe_div other
   end
 
+  def /(other : Int)
+    check_div_argument other
+
+    div = unsafe_div other
+    mod = unsafe_mod other
+    div -= 1 if other > 0 ? mod < 0 : mod > 0
+    div
+  end
+
   def internal_to_s(base, upcase = false)
     # Given sizeof(self) <= 128 bits, we need at most 128 bytes for a base 2
     # representation, plus one byte for the trailing 0.
@@ -150,9 +215,55 @@ struct Int
     count = (ptr_end - ptr).to_i32
     yield ptr, count
   end
+
+  def ~
+    self ^ -1
+  end
 end
 
 struct StaticArray(T, N)
+  private def check_index_out_of_bounds(index)
+    check_index_out_of_bounds(index) {
+      SVC.return_from_exception(0xDEED_u64)
+    }
+  end
+
+  private def check_index_out_of_bounds(index)
+    index += size if index < 0
+    if 0 <= index < size
+      index
+    else
+      yield
+    end
+  end
+
+  @[AlwaysInline]
+  def [](index : Int)
+    index = check_index_out_of_bounds index
+    to_unsafe[index]
+  end
+
+  @[AlwaysInline]
+  def []=(index : Int, value : T)
+    index = check_index_out_of_bounds index
+    to_unsafe[index] = value
+  end
+
+  def update(index : Int)
+    index = check_index_out_of_bounds index
+    to_unsafe[index] = yield to_unsafe[index]
+  end
+
+  def size
+    N
+  end
+
+  def []=(value : T)
+    size.times do |i|
+      to_unsafe[i] = value
+    end
+  end
+
   def to_unsafe : Pointer(T)
     pointerof(@buffer)
   end

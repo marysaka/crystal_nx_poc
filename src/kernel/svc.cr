@@ -1,3 +1,7 @@
+lib SVCEx
+  fun svcConnectToNamedPort(handle : Handle*, name : UInt8*) : Result
+end
+
 # For crt0
 fun svcExitProcess : NoReturn
   SVC.exit_process
@@ -8,9 +12,26 @@ fun svcReturnFromException(error_code : UInt64) : NoReturn
 end
 
 module SVC
+  def self.connect_to_named_port(session : Handle*, name : String) : Result
+    res = SVCEx.svcConnectToNamedPort(out handle, name.to_unsafe)
+
+    # TODO: https://github.com/crystal-lang/crystal/pull/6680
+    # res = uninitialized Result
+    # handle = uninitialized Handle
+    # asm("svc 0x1F" : "={w0}"(res), "={w1}"(handle) : "{x1}"(name.to_unsafe) : : "volatile")
+    session.value = handle
+    res
+  end
+
+  def self.send_sync_request(session : Handle) : UInt32
+    res = uninitialized UInt32
+    asm("svc 0x21" : "={w0}"(res) : "{x0}"(session))
+    res
+  end
+
   def self.break(reason : UInt64, unknown : UInt64, info : UInt64)
     res = uninitialized UInt32
-    asm("svc 0x28" : "=w0"(res) : "x0"(reason), "x1"(unknown), "x2"(info))
+    asm("svc 0x26" : "=w0"(res) : "x0"(reason), "x1"(unknown), "x2"(info))
     res
   end
 
