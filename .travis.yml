@@ -1,9 +1,10 @@
-language: crystal
-crystal:
-  - nightly
+language: generic
+
+services:
+  - docker
 
 dist: trusty
-sudo: false
+sudo: required
 
 addons:
   apt:
@@ -24,7 +25,7 @@ install:
   - cargo install --features=binaries --git https://github.com/MegatonHammer/linkle --force --root .
 
 script:
-  - make NAME=crystal_nx_poc_$TRAVIS_TAG LINKLE=./bin/linkle
+  - make CRYSTAL="sudo docker run -v $TRAVIS_BUILD_DIR:/app -w /app crystallang/crystal:nightly crystal" NAME=crystal_nx_poc_$TRAVIS_TAG LINKLE=./bin/linkle
 
 
 after_success:
