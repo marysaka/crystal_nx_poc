@@ -32,10 +32,15 @@ struct ServiceManager
     req.pack(GetServiceRequest.new(1, raw_service_name))
     res = SVC.send_sync_request(@session)
     if res == 0u32
-      res = req.unpack.as(IpcRawResponse*).value
-      return res.response_code.to_u32
+      raw_response = req.unpack.as(IpcRawResponse*).value
+      response_code = raw_response.response_code.to_u32
+      if response_code == 0
+        handle.value = req.handles[0].value
+      end
+      response_code
+    else
+      res
     end
-    res
   end
 
   def self.open : ServiceManager | Result
@@ -48,12 +53,15 @@ struct ServiceManager
       if (sm.get_service(pointerof(tmp_session), "") == 0x415)
         res = sm.init
         if res == 0
-          return sm
+          sm
+        else
+          res
         end
-        return res
+      else
+        sm
       end
-      return sm
+    else
+      res
     end
-    res
   end
 end

@@ -7,24 +7,6 @@ lib Crt0
   $rela_test_size : UInt32
 end
 
-struct TestStruct < IpcCommand
-  def initialize(@id : UInt64, @test : Int32)
-  end
-
-  def id
-    @id
-  end
-
-  def test
-    @test
-  end
-end
-
-struct LolStruct < IpcCommand
-  def initialize(@id : UInt64, @test : Int64)
-  end
-end
-
 sm_res = ServiceManager.open
 case sm_res
 when ServiceManager

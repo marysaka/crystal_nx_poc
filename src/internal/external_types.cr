@@ -268,3 +268,13 @@ struct StaticArray(T, N)
     pointerof(@buffer)
   end
 end
+
+struct Enum
+  def ==(other)
+    false
+  end
+
+  def ==(other : self)
+    value == other.value
+  end
+end

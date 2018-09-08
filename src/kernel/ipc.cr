@@ -1,36 +1,21 @@
-enum IpcMessageType : UInt32
-  Invalid,
-  LegacyRequest,
-  Close,
-  LegacyControl,
-  Request,
-  Control,
-  RequestWithContext,
-  ControlWithContext
-end
-
-enum IpcBufferType : UInt32
-  Normal,
-  Type1,
-  Invalid,
-  Type2
-end
-
-enum IpcBufferDirection : UInt32
-  # A
-  Send,
-  # B
-  Receive,
-  # W
-  Exchange
-
-  def ==(other : IpcBufferDirection)
-    self.value == other.value
-  end
-end
-
 struct IpcBuffer
-  def initialize(@direction : IpcBufferDirection, @type : IpcBufferType, @address : Void*, @size : UInt64)
+  enum Type : UInt32
+    Normal,
+    Type1,
+    Invalid,
+    Type2
+  end
+
+  enum Direction : UInt32
+    # A
+    Send,
+    # B
+    Receive,
+    # W
+    Exchange
+  end
+
+  def initialize(@direction : IpcBuffer::Direction, @type : IpcBuffer::Type, @address : Void*, @size : UInt64)
   end
 
   def address
@@ -81,10 +66,6 @@ abstract struct IpcStaticBuffer
   def counter
     @counter
   end
-
-  def pack_size(buffer : UInt16*)
-    buffer[0] = (@size > 0xFFFF) ? 0u16 : @size.to_u16
-  end
 end
 
 struct IpcPointerBuffer < IpcStaticBuffer
@@ -113,18 +94,27 @@ struct IpcReceiveListBuffer < IpcStaticBuffer
     buffer[1] = (c_address >> 32).to_u32 | (@size << 16)
     2u32
   end
+
+  def pack_size(buffer : UInt16*)
+    buffer[0] = (@size > 0xFFFF) ? 0u16 : @size.to_u16
+  end
 end
 
 struct IpcHandle
-  def initialize(@handle : Handle, @is_copied : Bool)
+  enum Type
+    Move,
+    Copy
+  end
+
+  def initialize(@handle : Handle, @type : IpcHandle::Type)
   end
 
   def value
     @handle
   end
 
-  def is_copied
-    @is_copied
+  def type
+    @type
   end
 end
 
@@ -142,7 +132,7 @@ struct IpcBufferArray(N)
 
   def send_count
     res = 0u64
-    filter_by_direction IpcBufferDirection::Send do |buffer|
+    filter_by_direction IpcBuffer::Direction::Send do |buffer|
       res += 1
     end
     res
@@ -150,7 +140,7 @@ struct IpcBufferArray(N)
 
   def recv_count
     res = 0u64
-    filter_by_direction IpcBufferDirection::Receive do |buffer|
+    filter_by_direction IpcBuffer::Direction::Receive do |buffer|
       res += 1
     end
     res
@@ -158,13 +148,13 @@ struct IpcBufferArray(N)
 
   def exch_count
     res = 0u64
-    filter_by_direction IpcBufferDirection::Exchange do |buffer|
+    filter_by_direction IpcBuffer::Direction::Exchange do |buffer|
       res += 1
     end
     res
   end
 
-  def filter_by_direction(direction : IpcBufferDirection)
+  def filter_by_direction(direction : IpcBuffer::Direction)
     @size.times do |i|
       buffer = @buffer[i]
       if buffer.direction == direction
@@ -189,10 +179,15 @@ struct IpcHandleArray(N)
     @buffer = uninitialized StaticArray(IpcHandle, N)
   end
 
-  def filter_by_type(is_copied : Bool)
+  @[AlwaysInline]
+  def [](index : Int)
+    @buffer[index]
+  end
+
+  def filter_by_type(handle_type : IpcHandle::Type)
     @size.times do |i|
       handle = @buffer[i]
-      if handle.is_copied == is_copied
+      if handle.type == handle_type
         yield handle
       end
     end
@@ -200,7 +195,7 @@ struct IpcHandleArray(N)
 
   def copy_count
     res = 0u64
-    filter_by_type true do |handle|
+    filter_by_type IpcHandle::Type::Copy do |handle|
       res += 1
     end
     res
@@ -208,7 +203,7 @@ struct IpcHandleArray(N)
 
   def move_count
     res = 0u64
-    filter_by_type false do |handle|
+    filter_by_type IpcHandle::Type::Move do |handle|
       res += 1
     end
     res
@@ -253,10 +248,20 @@ struct IpcRawResponse < IpcCommand
 end
 
 struct IpcMessage
+  enum Type : UInt32
+    Invalid,
+    LegacyRequest,
+    Close,
+    LegacyControl,
+    Request,
+    Control,
+    RequestWithContext,
+    ControlWithContext
+  end
   MAX_BUFFERS = 8
   MAX_OBJECTS = 8
 
-  @message_type = IpcMessageType::Request
+  @message_type = IpcMessage::Type::Request
   @send_pid = false
   @pid = 0u64
   @buffers : IpcBufferArray(MAX_BUFFERS)
@@ -266,28 +271,36 @@ struct IpcMessage
   @object_ids_count = 0u64
   @object_ids : SizedStaticArray(Handle, MAX_OBJECTS)
 
-  def set_message_type(message_type : IpcMessageType)
+  def set_message_type(message_type : IpcMessage::Type)
     @message_type = message_type
   end
 
-  def send_pid
+  def send_pid : Void
     @send_pid = true
   end
 
-  def add_buffer(ipc_buffer : IpcBuffer)
+  def send_handle(handle : Handle, handle_type : IpcHandle::Type) : Void
+    @handles.push(IpcHandle.new(handle, handle_type))
+  end
+
+  def add_buffer(ipc_buffer : IpcBuffer) : Void
     @buffers.push(ipc_buffer)
   end
 
-  def add_send_buffer(buffer : Void*, buffer_size : UInt64, buffer_type : IpcBufferType = IpcBufferType::Normal)
-    add_buffer(IpcBuffer.new(IpcBufferDirection::Send, buffer_type, buffer, buffer_size))
+  def add_send_buffer(buffer : Void*, buffer_size : UInt64, buffer_type : IpcBuffer::Type = IpcBuffer::Type::Normal) : Void
+    add_buffer(IpcBuffer.new(IpcBuffer::Direction::Send, buffer_type, buffer, buffer_size))
   end
 
-  def add_receive_buffer(buffer : Void*, buffer_size : UInt64, buffer_type : IpcBufferType = IpcBufferType::Normal)
-    add_buffer(IpcBuffer.new(IpcBufferDirection::Receive, buffer_type, buffer, buffer_size))
+  def add_receive_buffer(buffer : Void*, buffer_size : UInt64, buffer_type : IpcBuffer::Type = IpcBuffer::Type::Normal) : Void
+    add_buffer(IpcBuffer.new(IpcBuffer::Direction::Receive, buffer_type, buffer, buffer_size))
   end
 
-  def add_exchange_buffer(buffer : Void*, buffer_size : UInt64, buffer_type : IpcBufferType = IpcBufferType::Normal)
-    add_buffer(IpcBuffer.new(IpcBufferDirection::Exchange, buffer_type, buffer, buffer_size))
+  def add_exchange_buffer(buffer : Void*, buffer_size : UInt64, buffer_type : IpcBuffer::Type = IpcBuffer::Type::Normal) : Void
+    add_buffer(IpcBuffer.new(IpcBuffer::Direction::Exchange, buffer_type, buffer, buffer_size))
+  end
+
+  def handles : IpcHandleArray
+    @handles
   end
 
   def pack(raw_struct)
@@ -327,13 +340,13 @@ struct IpcMessage
       end
 
       # copied handles
-      @handles.filter_by_type true do |handle|
+      @handles.filter_by_type IpcHandle::Type::Copy do |handle|
         buffer[i] = handle.value
         i += 1
       end
 
       # moved handles
-      @handles.filter_by_type false do |handle|
+      @handles.filter_by_type IpcHandle::Type::Move do |handle|
         buffer[i] = handle.value
         i += 1
       end
@@ -347,17 +360,17 @@ struct IpcMessage
     end
 
     # A descriptors
-    @buffers.filter_by_direction IpcBufferDirection::Send do |ipc_buffer|
+    @buffers.filter_by_direction IpcBuffer::Direction::Send do |ipc_buffer|
       i += ipc_buffer.pack(buffer + i)
     end
 
     # B descriptors
-    @buffers.filter_by_direction IpcBufferDirection::Receive do |ipc_buffer|
+    @buffers.filter_by_direction IpcBuffer::Direction::Receive do |ipc_buffer|
       i += ipc_buffer.pack(buffer + i)
     end
 
     # W descriptors
-    @buffers.filter_by_direction IpcBufferDirection::Exchange do |ipc_buffer|
+    @buffers.filter_by_direction IpcBuffer::Direction::Exchange do |ipc_buffer|
       i += ipc_buffer.pack(buffer + i)
     end
 
@@ -399,7 +412,7 @@ struct IpcMessage
     ctrl1 = buffer[1]
     i += 2
 
-    @message_type = IpcMessageType.new(ctrl0 & 0xffff)
+    @message_type = IpcMessage::Type.new(ctrl0 & 0xffff)
     @has_pid = false
     raw_size = (ctrl1 & 0x1ff) * 4
 
@@ -439,14 +452,14 @@ struct IpcMessage
       # copied handles
       handles_copied_count = ((handle_descriptor >> 1) & 15)
       handles_copied_count.times do |handle_index|
-        @handles.push(IpcHandle.new(buffer[i + handle_index], true))
+        @handles.push(IpcHandle.new(buffer[i + handle_index], IpcHandle::Type::Copy))
       end
       i += handles_copied_count
 
       # moved handles
       handles_moved_count = ((handle_descriptor >> 5) & 15)
       handles_moved_count.times do |handle_index|
-        @handles.push(IpcHandle.new(buffer[i + handle_index], false))
+        @handles.push(IpcHandle.new(buffer[i + handle_index], IpcHandle::Type::Move))
       end
       i += handles_moved_count
     end
@@ -466,8 +479,7 @@ struct IpcMessage
     end
     i += buffers_count * 3
 
-    res = Pointer(Void).new(ignore_raw_padding ? raw_ptr : raw_padded_ptr)
-    res
+    Pointer(Void).new(ignore_raw_padding ? raw_ptr : raw_padded_ptr)
   end
 
   def initialize
@@ -482,7 +494,7 @@ end
 class IPC
   def self.close(session : Handle) : Result
     buffer = get_tls().as(UInt32*)
-    buffer[0] = IpcMessageType::Close.value
+    buffer[0] = IpcMessage::Type::Close.value
     dispatch(session)
   end
 
