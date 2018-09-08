@@ -34,6 +34,15 @@ struct IpcBuffer
     @direction
   end
 
+  def self.unpack(buffer : UInt32*, buffer_direction : IpcBuffer::Direction) : IpcBuffer
+    size = buffer[0]
+    packed = buffer[2]
+    address = (buffer[1].to_u64 | ((packed >> 28) << 32) | (((packed >> 2) & 15) << 36))
+    buffer_type = IpcBuffer::Type.new(packed & 3)
+
+    IpcBuffer.new(buffer_direction, buffer_type, Pointer(Void).new(address), size.to_u64)
+  end
+
   def pack(buffer : UInt32*) : UInt32
     buffer_address = @address.address
     # lower 32 bits of the size
@@ -69,6 +78,15 @@ abstract struct IpcStaticBuffer
 end
 
 struct IpcPointerBuffer < IpcStaticBuffer
+  def self.unpack(buffer : UInt32*) : IpcPointerBuffer
+    packed = buffer[0]
+
+    address = (buffer[1].to_u64 | (((packed >> 12) & 15) << 32) | (((packed >> 6) & 15) << 36))
+    size = packed >> 16
+    counter = packed & 63
+    IpcPointerBuffer.new(Pointer(Void).new(address), size.to_u64, counter.to_u8)
+  end
+
   def pack(buffer : UInt32*) : UInt32
     ptr = @address.address
     # packed:
@@ -469,7 +487,10 @@ struct IpcMessage
     end
 
     if parse_buffer
-      # TODO: X descriptors parsing
+      statics_in_count.times do |static_in_index|
+        static_in = IpcPointerBuffer.unpack(buffer + i + (static_in_index * 2))
+        @statics_in.push(static_in)
+      end
     end
     i += statics_in_count * 2
 
@@ -479,11 +500,28 @@ struct IpcMessage
     raw_padded_ptr = (raw_ptr + 15) & ~15
 
     if parse_buffer
-      # TODO: A/B/W descriptors parsing
+      send_count.times do |send_index|
+        send_buffer = IpcBuffer.unpack(buffer + i + (send_index * 3), IpcBuffer::Direction::Send)
+        @buffers.push(send_buffer)
+      end
+      i += send_count * 3
+      recv_count.times do |recv_index|
+        receive_buffer = IpcBuffer.unpack(buffer + i + (recv_index * 3), IpcBuffer::Direction::Receive)
+        @buffers.push(receive_buffer)
+      end
+      i += recv_count * 3
+      exch_count.times do |exch_index|
+        exchange_buffer = IpcBuffer.unpack(buffer + i + (exch_index * 3), IpcBuffer::Direction::Exchange)
+        @buffers.push(exchange_buffer)
+      end
+      i += exch_count * 3
+    else
+      i += buffers_count * 3
     end
-    i += buffers_count * 3
 
-    Pointer(Void).new(ignore_raw_padding ? raw_ptr : raw_padded_ptr)
+    res = Pointer(Void).new(ignore_raw_padding ? raw_ptr : raw_padded_ptr)
+    # TODO: C descriptors parsing
+    res
   end
 
   def initialize
