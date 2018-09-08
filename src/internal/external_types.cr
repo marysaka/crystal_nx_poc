@@ -278,3 +278,13 @@ struct Enum
     value == other.value
   end
 end
+
+class String
+  def bytesize
+    @bytesize
+  end
+
+  def to_unsafe : UInt8*
+    pointerof(@c)
+  end
+end

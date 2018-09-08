@@ -303,6 +303,10 @@ struct IpcMessage
     @handles
   end
 
+  def pid : UInt64
+    @pid
+  end
+
   def pack(raw_struct)
     i = 0
     buffer = get_tls().as(UInt32*)

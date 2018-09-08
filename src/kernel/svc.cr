@@ -13,12 +13,9 @@ end
 
 module SVC
   def self.connect_to_named_port(session : Handle*, name : String) : Result
-    res = SVCEx.svcConnectToNamedPort(out handle, name.to_unsafe)
-
-    # TODO: https://github.com/crystal-lang/crystal/pull/6680
-    # res = uninitialized Result
-    # handle = uninitialized Handle
-    # asm("svc 0x1F" : "={w0}"(res), "={w1}"(handle) : "{x1}"(name.to_unsafe) : : "volatile")
+    res = uninitialized Result
+    handle = uninitialized Handle
+    asm("svc 0x1F" : "={w0}"(res), "={w1}"(handle) : "{x1}"(name.to_unsafe) :: "volatile")
     session.value = handle
     res
   end

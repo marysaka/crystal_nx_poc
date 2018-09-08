@@ -80,14 +80,14 @@ export RANLIB_FOR_TARGET = $(RANLIB)
 export CFLAGS_FOR_TARGET = $(CC_FLAGS) -Wno-unused-command-line-argument -Wno-error-implicit-function-declaration
 
 NAME = crystal_nx_poc
-all: $(BUILD_DIR)/$(NAME).nso $(BUILD_DIR)/$(NAME).nro
+all: $(BUILD_DIR)/$(NAME).nso $(BUILD_DIR)/$(NAME).nro docs
 
 # start compiler-rt definitions
 LIB_COMPILER_RT_BUILTINS := $(BUILD_DIR)/compiler-rt/lib/libclang_rt.builtins-aarch64.a
 include mk/compiler-rt.mk
 # end compiler-rt definitions
 
-OBJECTS = $(LIB_COMPILER_RT_BUILTINS) $(BUILD_DIR)/$(NAME).o $(BUILD_DIR)/runtime/crt0.o $(BUILD_DIR)/kernel/svc_ex.o
+OBJECTS = $(LIB_COMPILER_RT_BUILTINS) $(BUILD_DIR)/$(NAME).o $(BUILD_DIR)/runtime/crt0.o
 
 $(BUILD_DIR)/$(NAME).o: $(SOURCES)
 	mkdir -p $(@D)
@@ -109,5 +109,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.S
 	$(LINKLE) nro $< $@
 
 clean: clean_compiler-rt
-	rm -rf $(OBJECTS) main.ll $(BUILD_DIR)/$(NAME).elf $(BUILD_DIR)/$(NAME).nso $(BUILD_DIR)/$(NAME).nro
+	rm -rf $(OBJECTS) main.ll $(BUILD_DIR)/$(NAME).elf $(BUILD_DIR)/$(NAME).nso $(BUILD_DIR)/$(NAME).nro docs
 
+docs: $(SOURCES)
+	$(CRYSTAL) docs src/main_docs.cr

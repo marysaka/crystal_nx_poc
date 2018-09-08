@@ -1,4 +1,5 @@
 require "primitives"
+require "../internal/external_types"
 require "intrinsics"
 
 require "../kernel/svc"

@@ -1,16 +1,3 @@
-require "primitives"
-require "./internal/external_types"
-
-class String
-  def bytesize
-    @bytesize
-  end
-
-  def to_unsafe : UInt8*
-    pointerof(@c)
-  end
-end
-
 lib Elf
   union ValueOrPointer
     value : UInt64

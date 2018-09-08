@@ -1,4 +1,6 @@
-language: generic
+language: crystal
+crystal:
+  - nightly
 
 dist: trusty
 sudo: false
