@@ -4,24 +4,32 @@ struct ServiceManager
   def initialize(@session : Handle)
   end
 
-  struct InitRequest < IpcCommand
+  # :nodoc:
+  struct InitRequest < IPC::Command
+    @id = 0
     @reserved = 42u64
+
+    def initialize
+    end
   end
 
   def init : Result
-    req = IpcMessage.new
+    req = IPC::Message.new
     req.send_pid
-    req.pack(InitRequest.new(0))
+    req.pack(InitRequest.new)
     SVC.send_sync_request(@session)
   end
 
-  struct GetServiceRequest < IpcCommand
-    def initialize(@id : UInt64, @service_name : StaticArray(UInt8, 8))
+  # :nodoc:
+  struct GetServiceRequest < IPC::Command
+    @id = 1
+
+    def initialize(@service_name : StaticArray(UInt8, 8))
     end
   end
 
   def get_service(handle : Handle*, service_name : String) : Result
-    req = IpcMessage.new
+    req = IPC::Message.new
     raw_service_name = StaticArray(UInt8, 8).new
     service_name_size = if service_name.bytesize.to_u64 > 8
                           8u64
@@ -29,10 +37,10 @@ struct ServiceManager
                           service_name.bytesize.to_u64
                         end
     memcpy(raw_service_name.to_unsafe, service_name.to_unsafe, service_name_size)
-    req.pack(GetServiceRequest.new(1, raw_service_name))
+    req.pack(GetServiceRequest.new(raw_service_name))
     res = SVC.send_sync_request(@session)
     if res == 0u32
-      raw_response = req.unpack.as(IpcRawResponse*).value
+      raw_response = req.unpack.as(IPC::SimpleRawResponse*).value
       response_code = raw_response.response_code.to_u32
       if response_code == 0
         handle.value = req.handles[0].value

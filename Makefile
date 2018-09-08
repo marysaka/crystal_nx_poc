@@ -61,7 +61,7 @@ CXXFLAGS := $(CXX_FLAGS)
 # Crystal
 CRYSTAL = crystal
 CRFLAGS = --cross-compile --prelude=./runtime/nx_prelude --target="$(TARGET_TRIPLET)" --emit llvm-ir
-SOURCES = src/*.cr src/**/*.cr
+SOURCES = src/*.cr src/**/*.cr src/**/**/*.cr
 
 # see https://github.com/MegatonHammer/linkle
 LINKLE = linkle

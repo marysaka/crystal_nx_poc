@@ -1,12 +1,9 @@
-lib SVCEx
-  fun svcConnectToNamedPort(handle : Handle*, name : UInt8*) : Result
-end
-
-# For crt0
+# :nodoc:
 fun svcExitProcess : NoReturn
   SVC.exit_process
 end
 
+# :nodoc:
 fun svcReturnFromException(error_code : UInt64) : NoReturn
   SVC.return_from_exception(error_code)
 end
