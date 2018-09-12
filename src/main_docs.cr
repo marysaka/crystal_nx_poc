@@ -1,5 +1,5 @@
 require "./types"
-require "./kernel/ipc"
-require "./kernel/svc"
+require "./kernel/**"
+require "./runtime/allocator"
 require "./runtime/tls"
-require "./services/sm"
+require "./services/**"

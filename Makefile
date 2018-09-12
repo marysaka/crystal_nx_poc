@@ -61,7 +61,7 @@ CXXFLAGS := $(CXX_FLAGS)
 # Crystal
 CRYSTAL = crystal
 CRFLAGS = --cross-compile --prelude=./runtime/nx_prelude --target="$(TARGET_TRIPLET)" --emit llvm-ir
-SOURCES = src/*.cr src/**/*.cr src/**/**/*.cr
+SOURCES := $(shell find src lib -type f -name '*.cr')
 
 # see https://github.com/MegatonHammer/linkle
 LINKLE = linkle
@@ -89,7 +89,7 @@ include mk/compiler-rt.mk
 
 OBJECTS = $(LIB_COMPILER_RT_BUILTINS) $(BUILD_DIR)/$(NAME).o $(BUILD_DIR)/runtime/crt0.o
 
-$(BUILD_DIR)/$(NAME).o: $(SOURCES)
+$(BUILD_DIR)/$(NAME).o: lib $(SOURCES)
 	mkdir -p $(@D)
 	rm -f $@
 	$(CRYSTAL) build src/main.cr -o $(BUILD_DIR)/$(NAME) $(CRFLAGS)
@@ -113,3 +113,9 @@ clean: clean_compiler-rt
 
 docs: $(SOURCES)
 	$(CRYSTAL) docs src/main_docs.cr
+
+
+lib: shard.yml shard.lock
+	shards install
+
+.PHONY: lib

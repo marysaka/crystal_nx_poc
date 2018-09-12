@@ -1,0 +1,6 @@
+version: 1.0
+shards:
+  cryloc:
+    github: Thog/cryloc
+    commit: 6b9e5ea6e8b7004da79538718adc71be34234605
+

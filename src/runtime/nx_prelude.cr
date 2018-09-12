@@ -7,6 +7,7 @@ require "../kernel/ipc"
 require "../types"
 require "../internal/utils"
 require "./tls"
+require "./allocator"
 
 lib LibCrystalMain
   @[Raises]
@@ -70,7 +71,13 @@ def nx_init(loader_config, main_thread_handle, base, dynamic_section) : UInt64
   if res != 0
     return res
   end
-  # TODO: memory allocation, kernel version detection, HBABI and argument parsing
+  # TODO: HB ABI loader config parsing
+
+  # TODO: memory allocator init calls (needs information from the HBABI)
+
+  # TODO: official argument parsing
+
+  # TODO: kernel version detection
   0_u64
 end
 
