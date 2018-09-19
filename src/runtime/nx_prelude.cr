@@ -85,8 +85,6 @@ def nx_init(loader_config, main_thread_handle, base, dynamic_section) : UInt64
     return heap_init_res.to_u64
   end
 
-  # TODO: memory allocator init calls (needs information from the HBABI)
-
   # TODO: official argument parsing
 
   # TODO: kernel version detection
