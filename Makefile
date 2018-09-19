@@ -60,6 +60,7 @@ CXXFLAGS := $(CXX_FLAGS)
 
 # Crystal
 CRYSTAL = crystal
+SHARDS = shards
 CRFLAGS = --cross-compile --prelude=./runtime/nx_prelude --target="$(TARGET_TRIPLET)" --emit llvm-ir
 SOURCES := $(shell find src lib -type f -name '*.cr')
 
@@ -116,7 +117,7 @@ docs: $(SOURCES)
 
 
 lib: shard.yml shard.lock
-	shards install
+	$(SHARDS) install
 	touch lib
 
 .PHONY: lib
