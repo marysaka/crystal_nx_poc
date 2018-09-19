@@ -117,5 +117,6 @@ docs: $(SOURCES)
 
 lib: shard.yml shard.lock
 	shards install
+	touch lib
 
 .PHONY: lib

@@ -32,7 +32,7 @@ end
 
 fun abort
   SVC.break(0x80000000, 0, 0)
-  SVC.exit_process
+  SVC.exit_process(0x42)
 end
 
 # see include/assert.h

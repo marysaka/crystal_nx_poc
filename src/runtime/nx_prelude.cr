@@ -14,6 +14,12 @@ lib LibCrystalMain
   fun __crystal_main(argc : Int32, argv : UInt8**)
 end
 
+lib Crt0
+  $rela_test : UInt8
+  $rela_test_size : UInt32
+  $loader_return_address : UInt64
+end
+
 def clean_bss(start_bss, end_bss)
   until start_bss.address == end_bss.address
     start_bss.value = 0
@@ -53,11 +59,12 @@ def relocate(base, dynamic_section) : UInt64
 
     case rela.reloc_type
     when 0x403_u32 # R_AARCH64_RELATIVE
+
       # TODO: supports symbol
       if rela.symbol != 0
         return 0x4243_u64
       end
-      Pointer(UInt64).new(base + rela.offset).value = base + rela.addend
+      Pointer(Pointer(Void)).new(base + rela.offset).value = Pointer(Void).new(base + rela.addend)
     else
       return 0x4242_u64
     end
@@ -71,6 +78,7 @@ def nx_init(loader_config, main_thread_handle, base, dynamic_section) : UInt64
   if res != 0
     return res
   end
+
   # TODO: HB ABI loader config parsing
 
   # TODO: memory allocator init calls (needs information from the HBABI)
@@ -81,8 +89,14 @@ def nx_init(loader_config, main_thread_handle, base, dynamic_section) : UInt64
   0_u64
 end
 
-fun __crystal_nx_entrypoint(loader_config : Void*, main_thread_handle : Handle, base : UInt64, dynamic_section : Elf::Dyn*, bss_start : UInt64*, bss_end : UInt64*) : UInt64
+fun __crystal_nx_entrypoint(loader_config : Void*, main_thread_handle : Handle, base : UInt64, dynamic_section : Elf::Dyn*, bss_start : UInt64*, bss_end : UInt64*, loader_return_address: Void**) : UInt64
   clean_bss(bss_start, bss_end)
+
+  # no previous LR so we are not running under the homebrew loader
+  if loader_return_address.value.address == 0
+    loader_return_address.value = ->SVC.exit_process(Int32).pointer
+  end
+
   res = nx_init(loader_config, main_thread_handle, base, dynamic_section)
   if res != 0
     return res

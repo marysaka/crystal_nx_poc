@@ -288,3 +288,20 @@ class String
     pointerof(@c)
   end
 end
+
+
+struct Proc
+  def pointer
+    internal_representation[0]
+  end
+
+  def closure_data
+    internal_representation[1]
+  end
+
+  private def internal_representation
+    func = self
+    ptr = pointerof(func).as({Void*, Void*}*)
+    ptr.value
+  end
+end

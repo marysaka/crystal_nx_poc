@@ -1,13 +1,3 @@
-# :nodoc:
-fun svcExitProcess : NoReturn
-  SVC.exit_process
-end
-
-# :nodoc:
-fun svcReturnFromException(error_code : UInt64) : NoReturn
-  SVC.return_from_exception(error_code)
-end
-
 module SVC
   def self.connect_to_named_port(session : Handle*, name : String) : Result
     res = uninitialized Result
@@ -29,8 +19,8 @@ module SVC
     res
   end
 
-  def self.exit_process : NoReturn
-    asm("svc 0x7" :::: "volatile")
+  def self.exit_process(return_code : Int32) : NoReturn
+    asm("svc 0x7" :: "x0"(return_code) :: "volatile")
     while true
     end
   end
