@@ -1,5 +1,6 @@
 require "./types"
 require "./kernel/**"
 require "./runtime/allocator"
+require "./runtime/environment"
 require "./runtime/tls"
 require "./services/**"

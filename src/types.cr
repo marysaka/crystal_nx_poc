@@ -24,6 +24,12 @@ end
 alias Handle = UInt32
 alias Result = UInt32
 
+# :nodoc:
+struct UInt32
+  CURRENT_THREAD  = 0xFFFF8000u32
+  CURRENT_PROCESS = 0xFFFF8001u32
+end
+
 struct SizedStaticArray(T, N)
   @buffer : StaticArray(T, N)
   @size = 0u64

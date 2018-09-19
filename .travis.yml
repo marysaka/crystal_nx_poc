@@ -11,13 +11,12 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
       - llvm-toolchain-trusty-6.0
-      - george-edison55-precise-backports
+      - sourceline: 'ppa:adrozdoff/cmake'
     packages:
       - clang-6.0
       - llvm-6.0
       - llvm-6.0-dev
       - lld-6.0
-      - cmake-data
       - cmake
 
 install:

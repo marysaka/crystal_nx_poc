@@ -20,6 +20,13 @@ struct ServiceManager
     SVC.send_sync_request(@session)
   end
 
+  def release
+    res = IPC::Message.close(@session)
+    SVC.close_handle(@session)
+    @session = 0u32
+    0u32
+  end
+
   # :nodoc:
   struct GetServiceRequest < IPC::Command
     @id = 1

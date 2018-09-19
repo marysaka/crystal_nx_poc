@@ -6,18 +6,13 @@ require "../kernel/svc"
 require "../kernel/ipc"
 require "../types"
 require "../internal/utils"
+require "./environment"
 require "./tls"
 require "./allocator"
 
 lib LibCrystalMain
   @[Raises]
   fun __crystal_main(argc : Int32, argv : UInt8**)
-end
-
-lib Crt0
-  $rela_test : UInt8
-  $rela_test_size : UInt32
-  $loader_return_address : UInt64
 end
 
 def clean_bss(start_bss, end_bss)
@@ -79,17 +74,38 @@ def nx_init(loader_config, main_thread_handle, base, dynamic_section) : UInt64
     return res
   end
 
-  # TODO: HB ABI loader config parsing
+  res = Environment.init(loader_config.as(LoaderConfigEntry*), main_thread_handle)
+
+  if res != 0
+    return res
+  end
+
+  heap_init_res = Cryloc::HeapManager.init
+  if heap_init_res != 0
+    return heap_init_res.to_u64
+  end
 
   # TODO: memory allocator init calls (needs information from the HBABI)
 
   # TODO: official argument parsing
 
   # TODO: kernel version detection
-  0_u64
+  res
 end
 
-fun __crystal_nx_entrypoint(loader_config : Void*, main_thread_handle : Handle, base : UInt64, dynamic_section : Elf::Dyn*, bss_start : UInt64*, bss_end : UInt64*, loader_return_address: Void**) : UInt64
+module ReturnValue
+  @@return_value = 0u64
+
+  def self.return_value=(return_value : UInt64)
+    @@return_value = return_value
+  end
+
+  def self.return_value
+    @@return_value
+  end
+end
+
+fun __crystal_nx_entrypoint(loader_config : Void*, main_thread_handle : Handle, base : UInt64, dynamic_section : Elf::Dyn*, bss_start : UInt64*, bss_end : UInt64*, loader_return_address : Void**) : UInt64
   clean_bss(bss_start, bss_end)
 
   # no previous LR so we are not running under the homebrew loader
@@ -99,8 +115,10 @@ fun __crystal_nx_entrypoint(loader_config : Void*, main_thread_handle : Handle, 
 
   res = nx_init(loader_config, main_thread_handle, base, dynamic_section)
   if res != 0
+    SVC.output_debug_string "Error:"
+    SVC.output_debug_string res, 16
     return res
   end
   LibCrystalMain.__crystal_main(0, nil)
-  0_u64
+  ReturnValue.return_value
 end

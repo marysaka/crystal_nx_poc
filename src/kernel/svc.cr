@@ -1,4 +1,18 @@
 module SVC
+  def self.set_heap_size(out_addr : Void**, size : UInt64) : Result
+    res = uninitialized Result
+    out = uninitialized Void*
+    asm("svc 0x1" : "={w0}"(res), "={x1}"(out) : "{x0}"(size) :: "volatile")
+    out_addr.value = out
+    res
+  end
+
+  def self.close_handle(handle : Handle) : Result
+    res = uninitialized Result
+    asm("svc 0x16" : "={w0}"(res) : "w0"(handle) :: "volatile")
+    res
+  end
+
   def self.connect_to_named_port(session : Handle*, name : String) : Result
     res = uninitialized Result
     handle = uninitialized Handle
@@ -7,14 +21,14 @@ module SVC
     res
   end
 
-  def self.send_sync_request(session : Handle) : UInt32
-    res = uninitialized UInt32
+  def self.send_sync_request(session : Handle) : Result
+    res = uninitialized Result
     asm("svc 0x21" : "={w0}"(res) : "{x0}"(session))
     res
   end
 
-  def self.break(reason : UInt64, unknown : UInt64, info : UInt64)
-    res = uninitialized UInt32
+  def self.break(reason : UInt64, unknown : UInt64, info : UInt64) : Result
+    res = uninitialized Result
     asm("svc 0x26" : "=w0"(res) : "x0"(reason), "x1"(unknown), "x2"(info))
     res
   end
@@ -25,8 +39,8 @@ module SVC
     end
   end
 
-  def self.output_debug_string(string : UInt8*, string_size : UInt64) : UInt32
-    res = uninitialized UInt32
+  def self.output_debug_string(string : UInt8*, string_size : UInt64) : Result
+    res = uninitialized Result
     asm("svc 0x27" : "=w0"(res) : "x0"(string), "x1"(string_size))
     res
   end
@@ -35,6 +49,14 @@ module SVC
     asm("svc 0x28" :: "x0"(error_code))
     while true
     end
+  end
+
+  def self.get_info(out_value : UInt64*, info_id : UInt64, handle : Handle, info_sub_id : UInt64) : Result
+    res = uninitialized Result
+    out = uninitialized UInt64
+    asm("svc 0x29" : "={w0}"(res), "={x1}"(out) : "x1"(info_id), "w2"(handle), "x3"(info_sub_id))
+    out_value.value = out
+    res
   end
 
   def self.output_debug_string(string : String)

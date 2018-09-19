@@ -265,5 +265,12 @@ module IPC
       @handles = uninitialized SizedStaticArray(Handle, MAX_OBJECTS)
       @object_ids = uninitialized SizedStaticArray(::Handle, MAX_OBJECTS)
     end
+
+    def self.close(session : ::Handle)
+      buffer = get_tls().as(UInt32*)
+      buffer[0] = Type::Close.value
+      buffer[1] = 0
+      SVC.send_sync_request(session)
+    end
   end
 end

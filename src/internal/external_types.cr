@@ -289,7 +289,6 @@ class String
   end
 end
 
-
 struct Proc
   def pointer
     internal_representation[0]
