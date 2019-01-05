@@ -61,7 +61,7 @@ module IPC
 
     def pack(raw_struct) : Void
       i = 0
-      buffer = get_tls().as(UInt32*)
+      buffer = ThreadLocalStorage.get().value.ipc.as(UInt32*)
 
       # Get all buffers count
       send_count = @buffers.send_count
@@ -162,7 +162,7 @@ module IPC
 
     def unpack(ignore_raw_padding = false, parse_buffer = false) : Void*
       i = 0
-      buffer = get_tls().as(UInt32*)
+      buffer = ThreadLocalStorage.get().value.ipc.as(UInt32*)
 
       ctrl0 = buffer[0]
       ctrl1 = buffer[1]
@@ -267,7 +267,7 @@ module IPC
     end
 
     def self.close(session : ::Handle)
-      buffer = get_tls().as(UInt32*)
+      buffer = ThreadLocalStorage.get().value.ipc.as(UInt32*)
       buffer[0] = Type::Close.value
       buffer[1] = 0
       SVC.send_sync_request(session)
