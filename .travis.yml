@@ -23,7 +23,7 @@ install:
   - export LLVM_POSTFIX=-6.0
   - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
   - source $HOME/.cargo/env
-  - cargo install --features=binaries --git https://github.com/MegatonHammer/linkle --force --root .
+  - cargo install --all-features --git https://github.com/MegatonHammer/linkle --force --root .
 
 script:
   - sudo make SHARDS="sudo docker run -v $TRAVIS_BUILD_DIR:/app -w /app crystallang/crystal:nightly shards" CRYSTAL="sudo docker run -v $TRAVIS_BUILD_DIR:/app -w /app crystallang/crystal:nightly crystal" NAME=crystal_nx_poc_$TRAVIS_TAG LINKLE=./bin/linkle
